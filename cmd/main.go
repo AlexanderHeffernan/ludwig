@@ -7,6 +7,6 @@ import (
 
 func main() {
 	orchestrator.Start()
-	time.Sleep(100 * time.Second)
+	time.Sleep(10000 * time.Second)
 	orchestrator.Stop()
 }

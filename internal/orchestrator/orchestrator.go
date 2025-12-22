@@ -91,7 +91,18 @@ func orchestratorLoop() {
 						optionLabels[i] = opt.Label
 					}
 					prompt := BuildResumePrompt(t.Name, t.WorkInProgress, t.Review.Question, optionLabels, t.ReviewResponse.ChosenLabel, t.ReviewResponse.UserNotes)
-					response, err := gemini.SendPrompt(prompt)
+					
+					// Create response writer for streaming
+					respWriter, respPath, err := storage.NewResponseWriter(t.ID)
+					if err != nil {
+						log.Printf("Error creating response writer for task %s: %v", t.ID, err)
+						t.Status = types.NeedsReview
+						_ = taskStore.UpdateTask(t)
+						continue
+					}
+					defer respWriter.Close()
+					
+					response, err := gemini.SendPromptWithStream(prompt, respWriter)
 					if err != nil {
 						log.Printf("Error resuming task %s: %v", t.ID, err)
 						t.Status = types.NeedsReview
@@ -100,6 +111,7 @@ func orchestratorLoop() {
 					}
 					log.Printf("Completed task %s: Gemini response: %s", t.ID, response)
 					t.Status = types.Completed
+					t.ResponseFile = respPath
 					_ = taskStore.UpdateTask(t)
 					
 					// Checkout back to main after task completion
@@ -141,7 +153,18 @@ func orchestratorLoop() {
 						log.Printf("Failed to set task %s to In Progress: %v", t.ID, err)
 						continue
 					}
-					response, err := gemini.SendPrompt(BuildTaskPrompt(t.Name))
+					
+					// Create response writer for streaming
+					respWriter, respPath, err := storage.NewResponseWriter(t.ID)
+					if err != nil {
+						log.Printf("Error creating response writer for task %s: %v", t.ID, err)
+						t.Status = types.Pending
+						_ = taskStore.UpdateTask(t)
+						continue
+					}
+					defer respWriter.Close()
+					
+					response, err := gemini.SendPromptWithStream(BuildTaskPrompt(t.Name), respWriter)
 					if err != nil {
 						log.Printf("Error sending task %s to Gemini: %v", t.ID, err)
 						t.Status = types.Pending
@@ -156,6 +179,7 @@ func orchestratorLoop() {
 						t.Status = types.NeedsReview
 						t.WorkInProgress = workInProgress
 						t.Review = review
+						t.ResponseFile = respPath
 						_ = taskStore.UpdateTask(t)
 						processed = true
 						break
@@ -163,6 +187,7 @@ func orchestratorLoop() {
 
 					log.Printf("Completed task %s: Gemini response: %s", t.ID, response)
 					t.Status = types.Completed
+					t.ResponseFile = respPath
 					_ = taskStore.UpdateTask(t)
 					
 					// Checkout back to main after task completion

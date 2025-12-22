@@ -32,7 +32,7 @@ func PalleteCommands(taskStore *storage.FileTaskStorage) []utils.Command {
 				// Refresh the kanban display
 				GetTasksAndDisplayKanban(taskStore)
 			},
-			Description: "add <task description> - Add a new task",
+			Description: "add <task description> - Add a new task. Tasks can be multiple words. No quotation marks needed.",
 		},
 		{
 			Text: "start",

@@ -1,6 +1,4 @@
-package storage
 
-import (
 	"encoding/json"
 	"errors"
 	"os"
@@ -9,6 +7,18 @@ import (
 
 	"ludwig/internal/types"
 )
+
+const ludwigDir = ".ludwig"
+
+// getLudwigDirPath returns the path to the .ludwig directory within the current working directory.
+func getLudwigDirPath() (string, error) {
+	cwd, err := os.Getwd()
+	if err != nil {
+		return "", fmt.Errorf("failed to get current working directory: %w", err)
+	}
+	ludwigPath := filepath.Join(cwd, ludwigDir)
+	return ludwigPath, nil
+}
 
 type FileTaskStorage struct {
 	mu       sync.Mutex
@@ -19,11 +29,15 @@ type FileTaskStorage struct {
 
 // NewFileTaskStorage initializes storage and loads tasks from file.
 func NewFileTaskStorage() (*FileTaskStorage, error) {
-	home, err := os.UserHomeDir()
+	ludwigPath, err := getLudwigDirPath()
 	if err != nil {
 		return nil, err
 	}
-	path := filepath.Join(home, ".ai-orchestrator", "tasks.json")
+	if err := os.MkdirAll(ludwigPath, 0755); err != nil {
+		return nil, fmt.Errorf("failed to create .ludwig directory: %w", err)
+	}
+
+	path := filepath.Join(ludwigPath, "tasks.json")
 	storage := &FileTaskStorage{
 		filePath: path,
 		tasks:    make(map[string]*types.Task),
@@ -33,6 +47,7 @@ func NewFileTaskStorage() (*FileTaskStorage, error) {
 	}
 	return storage, nil
 }
+
 
 // load reads tasks from the JSON file into memory.
 func (s *FileTaskStorage) load() error {

@@ -22,7 +22,7 @@ func PalleteCommands(taskStore *storage.FileTaskStorage) []utils.Command {
 				// skip the first part which is the command itself
 				newTask := &types.Task{
 					Name: strings.Join(parts[1:], " "),
-					Status: Pending,
+					Status: types.Pending,
 					ID: uuid.New().String(),
 				}
 

@@ -7,17 +7,12 @@ import (
 	"ludwig/internal/utils"
 )
 
-const (
-	Pending types.Status = iota
-	InProgress
-	Completed
-)
-
 func seperateTaskByStatus(tasks []types.Task) map[types.Status][]types.Task {
 	taskLists := map[types.Status][]types.Task{
-		Pending:    {},
-		InProgress: {},
-		Completed:  {},
+		types.Pending:     {},
+		types.InProgress:  {},
+		types.NeedsReview: {},
+		types.Completed:   {},
 	}
 	for _, task := range tasks {
 		taskLists[task.Status] = append(taskLists[task.Status], task)
@@ -27,13 +22,13 @@ func seperateTaskByStatus(tasks []types.Task) map[types.Status][]types.Task {
 
 const TASK_NAME_LENGTH = 30
 func printKanbanHeader() {
-	fmt.Print(" " + strings.Repeat("╭" + strings.Repeat("─", TASK_NAME_LENGTH - 3) + "╮ ", 3) + "\r\n")
-	fmt.Print(KanbanTaskName("Pending") + KanbanTaskName("In Progress") + KanbanTaskName("Completed") + "\r\n")
-	fmt.Print(" " + strings.Repeat("├" + strings.Repeat("─", TASK_NAME_LENGTH - 3) + "┤ ", 3) + "\r\n")
+	fmt.Print(" " + strings.Repeat("╭" + strings.Repeat("─", TASK_NAME_LENGTH - 3) + "╮ ", 4) + "\r\n")
+	fmt.Print(KanbanTaskName("Pending") + KanbanTaskName("In Progress") + KanbanTaskName("In Review") + KanbanTaskName("Completed") + "\r\n")
+	fmt.Print(" " + strings.Repeat("├" + strings.Repeat("─", TASK_NAME_LENGTH - 3) + "┤ ", 4) + "\r\n")
 }
 
 func printKanbanFooter() {
-	fmt.Print(" " + strings.Repeat("╰" + strings.Repeat("─", TASK_NAME_LENGTH - 3) + "╯ ", 3) + "\r\n")
+	fmt.Print(" " + strings.Repeat("╰" + strings.Repeat("─", TASK_NAME_LENGTH - 3) + "╯ ", 4) + "\r\n")
 }
 func KanbanTaskName(name string) string {
 	if (len(name) + 5 > TASK_NAME_LENGTH) {
@@ -53,9 +48,10 @@ func DisplayKanban(tasks []types.Task) {
 	taskLists := seperateTaskByStatus(tasks)
 
 	listLengths := []int{
-		len(taskLists[Pending]),
-		len(taskLists[InProgress]),
-		len(taskLists[Completed]),
+		len(taskLists[types.Pending]),
+		len(taskLists[types.InProgress]),
+		len(taskLists[types.NeedsReview]),
+		len(taskLists[types.Completed]),
 	}
 	maxListLength := 0
 	for _, length := range listLengths {
@@ -66,7 +62,7 @@ func DisplayKanban(tasks []types.Task) {
 
 	for i := 0; i < maxListLength; i++ {
 		var line strings.Builder
-		for status := Pending; status <= Completed; status++ {
+		for status := types.Pending; status <= types.Completed; status++ {
 			if i >= len(taskLists[status]) {
 				line.WriteString(KanbanTaskName(""))
 				continue;

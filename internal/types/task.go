@@ -52,7 +52,7 @@ func StatusString(task Task) string {
 	case InProgress:
 		return "In Progress"
 	case NeedsReview:
-		return "Needs Review"
+		return "In Review"
 	case Completed:
 		return "Completed"
 	default:

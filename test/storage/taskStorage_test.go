@@ -11,11 +11,9 @@ import (
 )
 
 func cleanupTestStorage(t *testing.T) {
-	home, _ := os.UserHomeDir()
-	taskFile := filepath.Join(home, ".ai-orchestrator", "tasks.json")
-	os.Remove(taskFile)
-	// Also remove .lock file if exists
-	os.Remove(taskFile + ".lock")
+	cwd, _ := os.Getwd()
+	ludwigDir := filepath.Join(cwd, ".ludwig")
+	os.RemoveAll(ludwigDir)
 }
 
 func setupTestStorage(t *testing.T) {
@@ -235,8 +233,8 @@ func TestTaskJSONFormat(t *testing.T) {
 	s.AddTask(task)
 
 	// Read the JSON file directly
-	home, _ := os.UserHomeDir()
-	taskFile := filepath.Join(home, ".ai-orchestrator", "tasks.json")
+	cwd, _ := os.Getwd()
+	taskFile := filepath.Join(cwd, ".ludwig", "tasks.json")
 	data, err := os.ReadFile(taskFile)
 	if err != nil {
 		t.Fatalf("failed to read task file: %v", err)

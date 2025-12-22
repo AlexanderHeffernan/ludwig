@@ -11,10 +11,9 @@ import (
 
 // Test helper to cleanup after tests
 func cleanupCLITestStorage(t *testing.T) {
-	home, _ := os.UserHomeDir()
-	taskFile := filepath.Join(home, ".ai-orchestrator", "tasks.json")
-	os.Remove(taskFile)
-	os.Remove(taskFile + ".lock")
+	cwd, _ := os.Getwd()
+	ludwigDir := filepath.Join(cwd, ".ludwig")
+	os.RemoveAll(ludwigDir)
 }
 
 // Test helper to setup (cleanup before) tests

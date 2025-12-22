@@ -56,7 +56,7 @@ func TestStatusStringAllStatuses(t *testing.T) {
 	}{
 		{types.Pending, "Pending"},
 		{types.InProgress, "In Progress"},
-		{types.NeedsReview, "Needs Review"},
+		{types.NeedsReview, "In Review"},
 		{types.Completed, "Completed"},
 	}
 

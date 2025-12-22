@@ -25,7 +25,7 @@ func TestStatusString(t *testing.T) {
 		{
 			name:     "NeedsReview_status",
 			status:   types.NeedsReview,
-			expected: "Needs Review",
+			expected: "In Review",
 		},
 		{
 			name:     "Completed status",

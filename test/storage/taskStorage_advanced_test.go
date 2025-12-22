@@ -293,8 +293,8 @@ func TestTaskStoragePathHandling(t *testing.T) {
 	setupTestStorage(t)
 	defer cleanupTestStorage(t)
 
-	home, _ := os.UserHomeDir()
-	expectedPath := filepath.Join(home, ".ai-orchestrator", "tasks.json")
+	cwd, _ := os.Getwd()
+	expectedPath := filepath.Join(cwd, ".ludwig", "tasks.json")
 
 	s, _ := storage.NewFileTaskStorage()
 	task := &types.Task{

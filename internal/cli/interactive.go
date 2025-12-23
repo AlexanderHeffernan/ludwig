@@ -162,9 +162,9 @@ func (m *Model) View() string {
 	
 	// Calculate padding for the input to fit within the bubble
 	inputWidth := termWidth - 6 // Account for borders and padding
-	if inputWidth < 20 {
-		inputWidth = 20 // Minimum input width
-	}
+
+	inputWidth = max(inputWidth, 20)
+
 	
 	// Set the textinput width to fit within the bubble
 	m.textInput.Width = inputWidth

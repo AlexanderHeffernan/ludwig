@@ -38,9 +38,10 @@ func TestCommandStructure(t *testing.T) {
 	commandCalled := false
 	commandText := ""
 	
-	action := func(text string) {
+	action := func(text string) string {
 		commandCalled = true
 		commandText = text
+		return text
 	}
 
 	cmd := utils.Command{
@@ -56,12 +57,15 @@ func TestCommandStructure(t *testing.T) {
 		t.Errorf("command description not set properly")
 	}
 
-	cmd.Action("test input")
+	result := cmd.Action("test input")
 	if !commandCalled {
 		t.Errorf("action not called")
 	}
 	if commandText != "test input" {
 		t.Errorf("action text not passed properly")
+	}
+	if result != "test input" {
+		t.Errorf("action should return the input text")
 	}
 }
 
@@ -150,17 +154,17 @@ func TestMultipleCommands(t *testing.T) {
 	commands := []utils.Command{
 		{
 			Text:        "help",
-			Action:      func(text string) {},
+			Action:      func(text string) string { return "" },
 			Description: "Show help",
 		},
 		{
 			Text:        "start",
-			Action:      func(text string) {},
+			Action:      func(text string) string { return "" },
 			Description: "Start process",
 		},
 		{
 			Text:        "stop",
-			Action:      func(text string) {},
+			Action:      func(text string) string { return "" },
 			Description: "Stop process",
 		},
 	}
@@ -198,7 +202,7 @@ func TestKeyActionEmptyDescription(t *testing.T) {
 func TestCommandEmptyText(t *testing.T) {
 	cmd := utils.Command{
 		Text:        "",
-		Action:      func(text string) {},
+		Action:      func(text string) string { return "" },
 		Description: "Empty command",
 	}
 

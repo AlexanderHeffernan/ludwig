@@ -17,7 +17,7 @@ type KeyAction struct {
 
 type Command struct {
 	Text string
-	Action func(Text string)
+	Action func(Text string) string
 	Description string
 }
 
@@ -63,8 +63,10 @@ func RequestAction(actions []Command) string {
 	return ""
 }
 
-func PrintHelp(actions []Command) {
-	fmt.Println("Available Commands:")
+func PrintHelp(actions []Command) string {
+	builder := strings.Builder{}
+	//fmt.Println("Available Commands:")
+	builder.WriteString("Available Commands:\n  ")
 	maxLength := 0
 	for _, cmd := range actions {
 		if len(cmd.Text) > maxLength {
@@ -72,19 +74,12 @@ func PrintHelp(actions []Command) {
 		}
 	}
 	for _, cmd := range actions {
-		fmt.Printf(" %-*s: %s\r\n", maxLength, cmd.Text, cmd.Description)
+		//fmt.Printf(" %-*s: %s\r\n", maxLength, cmd.Text, cmd.Description)
+		builder.WriteString(cmd.Text + ": " + cmd.Description + "\n  ")
 	}
-	fmt.Println("\r\nPress any key to continue...")
+	//fmt.Println("\r\nPress any key to continue...")
 	
-	fd := int(os.Stdin.Fd())
-	oldState, err := term.MakeRaw(fd)
-	if err != nil {
-		return
-	}
-	defer term.Restore(fd, oldState)
-	
-	char := make([]byte, 1)
-	syscall.Read(fd, char)
+	return builder.String()
 }
 
 func RequestInput(prompt string) string {
@@ -150,10 +145,36 @@ func RequestInput(prompt string) string {
 }
 
 func ClearScreen() {
+	/*
 	fmt.Print("\033[3J") // Clear scrollback (if supported)
     fmt.Print("\033[H\033[2J") // Home + clear visible screen
+	*/
 }
 
 func Println(text string) {
 	fmt.Print(text + "\r\n")
+}
+
+func GenerateTopBubbleBorder(width int) string {
+	borderWidth := width - 4
+	if borderWidth < 10 {
+		borderWidth = 10 // Minimum border width
+	}
+	return " " + strings.Repeat("╭", 1) + strings.Repeat("─", borderWidth) + strings.Repeat("╮", 1) + " \n"
+}
+
+func GenerateBottomBubbleBorder(width int) string {
+	borderWidth := width - 4
+	if borderWidth < 10 {
+		borderWidth = 10 // Minimum border width
+	}
+	return " " + strings.Repeat("╰", 1) + strings.Repeat("─", borderWidth) + strings.Repeat("╯", 1) + " \n"
+}
+
+func TermWidth() int {
+	width, _, err := term.GetSize(int(os.Stdout.Fd()))
+	if err != nil {
+		return 80 // Default width
+	}
+	return width
 }

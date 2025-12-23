@@ -12,6 +12,8 @@ import (
 	"time"
 )
 
+const PADDING string = "\n  "
+
 func PalleteCommands(taskStore *storage.FileTaskStorage) []utils.Command {
 	actions := []utils.Command {
 		{
@@ -37,6 +39,36 @@ func PalleteCommands(taskStore *storage.FileTaskStorage) []utils.Command {
 				return "Added new task: " + newTask.Name
 			},
 			Description: "add <task description> - Add a new task. Tasks can be multiple words. No quotation marks needed.",
+		},
+		{
+			Text: "delete",
+			Description: "delete <task ref> - Delete a task by it's ref, can be seen to the left of the task name on the kanban. Do not include the # symbol.",
+			Action: func(text string) string {
+				parts := strings.Fields(text)
+				if !checkArgumentsCount(2, parts) {
+					return "Usage: delete <task ref> - Delete a task by it's ref, can be seen to the left of the task name on the kanban."
+				}
+				taskIndex, err := strconv.Atoi(parts[1])
+				if err != nil {
+					return "Invalid task ref. Must be a number."
+				}
+				
+				tasksPointers, err := taskStore.ListTasks()
+				if err != nil {
+					return PADDING + "Error retrieving tasks: " + err.Error()
+				}
+
+				tasks := utils.PointerSliceToValueSlice(tasksPointers)
+
+				if taskIndex < 0 || taskIndex >= len(tasks) {
+					return "Task ref out of range."
+				}
+				taskToDelete := tasks[taskIndex]
+				if err := taskStore.DeleteTask(taskToDelete.ID); err != nil {
+					return "Error deleting task: " + err.Error()
+				}
+				return "Deleted task: " + taskToDelete.Name
+			},
 		},
 		{
 			Text: "start",

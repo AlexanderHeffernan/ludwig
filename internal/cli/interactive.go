@@ -66,10 +66,6 @@ func NewModel(taskStore *storage.FileTaskStorage) *Model {
 	return m
 }
 
-func (m *Model) updateMessage(msg string) tea.Cmd {
-	m.message = msg
-	return nil
-}
 
 // Init initializes the application with a command to start the timer.
 func (m *Model) Init() tea.Cmd {
@@ -91,7 +87,7 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			input := strings.TrimSpace(m.textInput.Value())
 			parts := strings.Fields(input)
 			m.textInput.SetValue("")
-			m.message = "" // Clear previous message
+			//m.message = "" // Clear previous message
 			m.err = nil     // Clear previous error
 
 			if len(parts) == 0 {
@@ -107,7 +103,8 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if cmd.Text == commandText {
 					// Execute the command's action.
 					if cmd.Action != nil {
-						cmd.Action(input)
+						output := cmd.Action(strings.Join(parts, " "))
+						m.message = output
 					}
 					// After action, refresh tasks immediately.
 				tasks, err := m.taskStore.ListTasks()
@@ -150,15 +147,39 @@ func (m *Model) View() string {
 	var s strings.Builder
 	// Render the Kanban board.
 	s.WriteString(RenderKanban(m.tasks))
-	s.WriteString("\n")
-	// Render the text input for commands.
-	if m.message != "" {
-		s.WriteString("\n" + m.message)
-	}
+	//s.WriteString("\n")
+	
+	// Render status messages and errors before the input area
+	s.WriteString("  " + m.message + "\n")
+
 	if m.err != nil {
-		s.WriteString("\nError: " + m.err.Error())
+		s.WriteString("\nError: " + m.err.Error() + "\n")
 	}
-	s.WriteString(m.textInput.View())
-	// Render any status messages or errors.
+	
+	// Render the text input for commands with bubble border.
+	termWidth := utils.TermWidth()
+	s.WriteString(utils.GenerateTopBubbleBorder(termWidth))
+	
+	// Calculate padding for the input to fit within the bubble
+	inputWidth := termWidth - 6 // Account for borders and padding
+	if inputWidth < 20 {
+		inputWidth = 20 // Minimum input width
+	}
+	
+	// Set the textinput width to fit within the bubble
+	m.textInput.Width = inputWidth
+	
+	// Render the middle of the bubble with the input
+	inputLine := " │ " + m.textInput.View()
+	// Pad the line to fill the bubble width
+	neededPadding := termWidth - len(inputLine) - 1
+	if neededPadding > 0 {
+		inputLine += strings.Repeat(" ", neededPadding)
+	}
+	inputLine += "│ \n"
+	s.WriteString(inputLine)
+	
+	s.WriteString(utils.GenerateBottomBubbleBorder(termWidth))
+	
 	return s.String()
 }

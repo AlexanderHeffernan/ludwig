@@ -5,6 +5,8 @@ import (
 	"strings"
 	types "ludwig/internal/types"
 	"ludwig/internal/utils"
+	"strconv"
+	"slices"
 )
 
 var borderColors map[types.Status]string = map[types.Status]string {
@@ -105,6 +107,7 @@ func DisplayKanban(tasks []types.Task) {
 		}
 	}
 
+	index := 0
 	for i := 0; i < maxListLength; i++ {
 		var line strings.Builder
 		for status := types.Pending; status <= types.Completed; status++ {
@@ -112,9 +115,11 @@ func DisplayKanban(tasks []types.Task) {
 				line.WriteString(KanbanTaskName("", status))
 				continue;
 			}
-			line.WriteString(KanbanTaskName(taskLists[status][i].Name, status))
+			displayText := strconv.Itoa(index) + " " + taskLists[status][i].Name
+			line.WriteString(KanbanTaskName(displayText, status))
 		}
 		fmt.Print(line.String() + " \n")
+		index++
 	}
 	printKanbanFooter()
 }
@@ -138,6 +143,7 @@ func RenderKanban(tasks []types.Task) string {
 		}
 	}
 
+	index := 1
 	for i := 0; i < maxListLength; i++ {
 		var line strings.Builder
 		for status := types.Pending; status <= types.Completed; status++ {
@@ -145,9 +151,13 @@ func RenderKanban(tasks []types.Task) string {
 				line.WriteString(KanbanTaskName("", status))
 				continue;
 			}
-			line.WriteString(KanbanTaskName(taskLists[status][i].Name, status))
+			task := taskLists[status][i]
+			displayText := "#" + strconv.Itoa(slices.Index(tasks, task)) + " " + task.Name
+			index++
+			line.WriteString(KanbanTaskName(displayText, status))
 		}
 		builder.WriteString(line.String() + " \n")
+
 	}
 	builder.WriteString(genKanbanFooter())
 	return builder.String()

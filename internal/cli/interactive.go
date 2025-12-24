@@ -206,26 +206,31 @@ func (m *Model) View() string {
 	s.WriteString(RenderKanban(m.tasks))
 	//s.WriteString("\n")
 	
-	// Render status messages and errors before the input area
-	s.WriteString("  " + m.message + "\n")
+	// Render output messages
+	padStyle := lipgloss.NewStyle().Padding(2, 2)
+	s.WriteString(padStyle.Render(m.message))
 
 	if m.err != nil {
-		s.WriteString("\nError: " + m.err.Error() + "\n")
+		s.WriteString(padStyle.Render("Error: " + m.err.Error()))
 	}
 	
 	// Render the text input for commands with bubble border.
 	termWidth := utils.TermWidth()
+	termHeight := utils.TermHeight()
+
+	gapBetween := termHeight - strings.Count(s.String(), "\n") - m.textInput.Height() - 4
+	if gapBetween > 0 {
+		s.WriteString(strings.Repeat("\n", gapBetween))
+	}
 	
 	// Update textarea width to match the available space in the border
-	inputWidth := termWidth - 6 // Account for border (4) + padding (2)
-	if inputWidth < 20 {
-		inputWidth = 20 // Minimum width
-	}
+	inputWidth := max(termWidth - 6, 20) // Account for border (4) + padding (2)
 	m.textInput.SetWidth(inputWidth)
 	
 	// Render the middle of the bubble with the input
 	inputText := m.textInput.View()
 	borderStyle := lipgloss.NewStyle().
+		Align(lipgloss.Bottom).
 		Border(lipgloss.RoundedBorder()).
 		Width(termWidth - 4).
 		BorderForeground(lipgloss.Color("62")).

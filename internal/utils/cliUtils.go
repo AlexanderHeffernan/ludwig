@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 	"syscall"
+	"github.com/charmbracelet/bubbles/table"
+	//"github.com/charmbracelet/lipgloss"
 )
 
 type KeyAction struct {
@@ -66,7 +68,7 @@ func RequestAction(actions []Command) string {
 func PrintHelp(actions []Command) string {
 	builder := strings.Builder{}
 	//fmt.Println("Available Commands:")
-	builder.WriteString("\n  Available Commands:\n  ")
+	builder.WriteString("Available Commands:\n")
 	maxLength := 0
 	for _, cmd := range actions {
 		if len(cmd.Text) > maxLength {
@@ -75,11 +77,43 @@ func PrintHelp(actions []Command) string {
 	}
 	for _, cmd := range actions {
 		//fmt.Printf(" %-*s: %s\r\n", maxLength, cmd.Text, cmd.Description)
-		builder.WriteString(cmd.Text + ": " + cmd.Description + "\n  ")
+		builder.WriteString(cmd.Text + ": " + cmd.Description)
 	}
 	//fmt.Println("\r\nPress any key to continue...")
 	
 	return builder.String()
+}
+
+func genHelpTableRows(actions []Command) []table.Row {
+	var rows []table.Row
+	for _, cmd := range actions {
+		rows = append(rows, table.Row{cmd.Text, cmd.Description})
+	}
+	rows = append(rows, table.Row{"help", "Show this help message"})
+	return rows
+}
+
+func tableOptions(columns []table.Column, rows []table.Row) table.Model {
+	t := table.New(
+		table.WithColumns(columns),
+		table.WithRows(rows),
+		table.WithFocused(false),
+	)
+	s := table.DefaultStyles()
+	s.Selected = s.Cell.Padding(0,0).Margin(0,0)
+	t.SetStyles(s)
+	return t
+}
+
+func PrintHelpTable(actions []Command) string {
+	columns := []table.Column {
+		{Title: "Command", Width: 20},
+		{Title: "Description", Width: 200},
+	}
+	rows := genHelpTableRows(actions)
+	t := tableOptions(columns, rows)
+
+	return t.View()
 }
 
 func RequestInput(prompt string) string {
@@ -179,6 +213,14 @@ func TermWidth() int {
 	return width
 }
 
+func TermHeight() int {
+	_, height, err := term.GetSize(int(os.Stdout.Fd()))
+	if err != nil {
+		return 24 // Default height
+	}
+	return height
+}
+
 func LeftRightBorderedString(name string, length int, visLength int, truncate bool, borderColor string) string {
 	if (truncate && len(name) + 5 > length) {
 		truncatedName := name[:length - 4] + "..."
@@ -206,6 +248,14 @@ func InsertLineBreaks(s string, n int) string {
     return b.String()
 }
 
+func BoldColoredString(s string, colorCode string) string {
+	return fmt.Sprintf("\033[1;%sm%s\033[0m", colorCode, s)
+}
+
 func ColoredString(s string, colorCode string) string {
 	return fmt.Sprintf("\033[%sm%s\033[0m", colorCode, s)
+}
+
+func BoldString(s string) string {
+	return fmt.Sprintf("\033[1m%s\033[0m", s)
 }

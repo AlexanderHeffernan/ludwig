@@ -131,7 +131,7 @@ func PalleteCommands(taskStore *storage.FileTaskStorage) []utils.Command {
 				return "Usage: help method takes no arguments"
 			}
 			//utils.PrintHelp(actions)
-			return utils.PrintHelp(actions)
+			return utils.PrintHelpTable(actions)
 		},
 	})
 }

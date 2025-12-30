@@ -8,7 +8,6 @@ import (
 	"time"
 	"syscall"
 	"github.com/charmbracelet/bubbles/table"
-	//"github.com/charmbracelet/lipgloss"
 )
 
 type KeyAction struct {

@@ -15,6 +15,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/bubbles/textarea"
+	"github.com/charmbracelet/bubbles/viewport"
 )
 
 // StartInteractive runs the interactive bubbletea UI.
@@ -42,6 +43,9 @@ type Model struct {
 	commands  []utils.Command
 	err       error
 	message   string
+	fullScreenOutput string
+	viewport viewport.Model
+	scrollPos int
 }
 
 // tickMsg is a message sent on a timer to trigger a refresh.
@@ -78,6 +82,10 @@ func NewModel(taskStore *storage.FileTaskStorage) *Model {
 		taskStore: taskStore,
 		tasks:     utils.PointerSliceToValueSlice(tasks),
 		textInput: ti,
+		message:   "",
+		err:       nil,
+		fullScreenOutput: "",
+		scrollPos: 0,
 	}
 	m.commands = PalleteCommands(taskStore)
 	return m
@@ -140,6 +148,11 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch msg.Type {
 		case tea.KeyCtrlC, tea.KeyEsc:
+			if m.viewport.Height > 0 {
+				// Exit full screen output view
+				m.viewport = viewport.Model{}
+				return m, nil
+			}
 			return m, tea.Quit
 		case tea.KeyEnter:
 			input := strings.TrimSpace(m.textInput.Value())
@@ -162,10 +175,16 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					// Execute the command's action.
 					if cmd.Action != nil {
 						output := cmd.Action(strings.Join(parts, " "))
-						m.message = output
+						if parts[0] == "view" {
+							//m.fullScreenOutput = output
+							m.viewport = viewport.New(utils.TermWidth() - 4, utils.TermHeight() - 6)
+							m.viewport.SetContent(output)
+						} else {
+							m.message = output
+						}
 					}
 					// After action, refresh tasks immediately.
-				tasks, err := m.taskStore.ListTasks()
+					tasks, err := m.taskStore.ListTasks()
 					if err != nil {
 						m.err = err
 					} else {
@@ -176,7 +195,16 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			m.err = fmt.Errorf("command not found: %q", commandText)
 			return m, nil
+		case tea.KeyCtrlS:
+			//m.scrollPos+=utils.TermHeight() - 6
+			//m.scrollPos = min(m.scrollPos, len(strings.Split(m.fullScreenOutput, "\n")) - utils.TermHeight() - 6)
+			m.viewport.ScrollDown((utils.TermHeight() - 6)/2)
+			return m, nil
+		case tea.KeyCtrlW:
+			m.viewport.ScrollUp((utils.TermHeight() - 6)/2)
+			return m, nil
 		}
+
 	case tickMsg:
 		// On each tick, reload tasks from storage.
 		tasks, err := m.taskStore.ListTasks()
@@ -199,29 +227,52 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
+const VIEWPORT_CONTROLS = "\n(Press Ctrl+S to scroll down, Ctrl+W to scroll up, Esc to exit view)"
 // View renders the UI.
 func (m *Model) View() string {
 	var s strings.Builder
+	if m.viewport.Height > 0 {
+		// Render full screen output view
+		bubbleStyle := lipgloss.NewStyle().
+			Border(lipgloss.RoundedBorder()).
+			Width(utils.TermWidth() - 4).
+			Height(utils.TermHeight() - 6).
+			BorderForeground(lipgloss.Color("62")).
+			Padding(1, 1).
+			Margin(1, 1)
+
+		s.WriteString(bubbleStyle.Render(m.viewport.View()))
+		s.WriteString(VIEWPORT_CONTROLS)
+		return s.String()
+	}
 	// Render the Kanban board.
 	s.WriteString(RenderKanban(m.tasks))
 	//s.WriteString("\n")
-	
-	// Render output messages
-	padStyle := lipgloss.NewStyle().Padding(2, 2)
-	s.WriteString(padStyle.Render(m.message))
 
-	if m.err != nil {
-		s.WriteString(padStyle.Render("Error: " + m.err.Error()))
+	linesCount := strings.Count(s.String(), "\n")
+	
+	padStyle := lipgloss.NewStyle().
+		Padding(1, 2).
+		Height(utils.TermHeight() - linesCount - m.textInput.Height() - 3).
+		MarginBottom(0)
+	// Render output messages
+	if m.message != "" || m.err != nil {
+		// Only add padding when there's actually content to show
+		if m.message != "" {
+			s.WriteString(padStyle.Render(m.message))
+		}
+
+		if m.err != nil {
+			s.WriteString(padStyle.Render("Error: " + m.err.Error()))
+		}
+	} else {
+		// Add empty padding to separate Kanban from input
+		s.WriteString(padStyle.Render(""))
 	}
+
 	
 	// Render the text input for commands with bubble border.
 	termWidth := utils.TermWidth()
-	termHeight := utils.TermHeight()
-
-	gapBetween := termHeight - strings.Count(s.String(), "\n") - m.textInput.Height() - 4
-	if gapBetween > 0 {
-		s.WriteString(strings.Repeat("\n", gapBetween))
-	}
 	
 	// Update textarea width to match the available space in the border
 	inputWidth := max(termWidth - 6, 20) // Account for border (4) + padding (2)
@@ -230,7 +281,6 @@ func (m *Model) View() string {
 	// Render the middle of the bubble with the input
 	inputText := m.textInput.View()
 	borderStyle := lipgloss.NewStyle().
-		Align(lipgloss.Bottom).
 		Border(lipgloss.RoundedBorder()).
 		Width(termWidth - 4).
 		BorderForeground(lipgloss.Color("62")).

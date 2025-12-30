@@ -12,8 +12,6 @@ import (
 	"time"
 )
 
-const PADDING string = "\n  "
-
 func PalleteCommands(taskStore *storage.FileTaskStorage) []utils.Command {
 	actions := []utils.Command {
 		{
@@ -55,7 +53,7 @@ func PalleteCommands(taskStore *storage.FileTaskStorage) []utils.Command {
 				
 				tasksPointers, err := taskStore.ListTasks()
 				if err != nil {
-					return PADDING + "Error retrieving tasks: " + err.Error()
+					return "Error retrieving tasks: " + err.Error()
 				}
 
 				tasks := utils.PointerSliceToValueSlice(tasksPointers)
@@ -119,6 +117,36 @@ func PalleteCommands(taskStore *storage.FileTaskStorage) []utils.Command {
 				//utils.Println("Exiting CLI...")
 				os.Exit(0)
 				return ""
+			},
+		},
+		{
+			Text: "view",
+			Description: "view <task ref> - View the streamed output log of a task by it's ref. Do not include the # symbol.",
+			Action: func(text string) string {
+				parts := strings.Fields(text)
+				if !checkArgumentsCount(2, parts) {
+					return "Usage: view command takes 1 argument: <task ref>"
+				}
+
+				taskIndex, err := strconv.Atoi(parts[1])
+				if err != nil {
+					return "Invalid task ref. Must be a number."
+				}
+				
+				tasksPointers, err := taskStore.ListTasks()
+				if err != nil {
+					return "Error retrieving tasks: " + err.Error()
+				}
+
+				tasks := utils.PointerSliceToValueSlice(tasksPointers)
+
+				if taskIndex < 0 || taskIndex >= len(tasks) {
+					return "Task ref out of range."
+				}
+				taskToView := tasks[taskIndex]
+
+				fileContent := utils.ReadFileAsString("./.ludwig/" + taskToView.ResponseFile)
+				return utils.OutputLines(strings.Split(fileContent, "\n"))
 			},
 		},
 	}

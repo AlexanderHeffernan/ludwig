@@ -222,9 +222,9 @@ func TermHeight() int {
 
 func LeftRightBorderedString(name string, length int, visLength int, truncate bool, borderColor string) string {
 	if (truncate && len(name) + 5 > length) {
-		truncatedName := name[:length - 4] + "..."
+		truncatedName := name[:length - 8] + "... "
 		numSpaces := max(length - visLength - 4, 0)
-		return " │ " + truncatedName + strings.Repeat(" ", numSpaces) + "│"
+		return ColoredString(" │ ", borderColor) + truncatedName + strings.Repeat(" ", numSpaces) + ColoredString("│", borderColor)
 	}
 
 	numSpaces := max(length - visLength - 4, 0)

@@ -145,8 +145,9 @@ func PalleteCommands(taskStore *storage.FileTaskStorage) []utils.Command {
 				}
 				taskToView := tasks[taskIndex]
 
-				fileContent := utils.ReadFileAsString("./.ludwig/" + taskToView.ResponseFile)
-				return utils.OutputLines(strings.Split(fileContent, "\n"))
+				filePath := "./.ludwig/" + taskToView.ResponseFile
+				fileContent := utils.ReadFileAsString(filePath)
+				return filePath + "\n" + utils.OutputLines(strings.Split(fileContent, "\n"))
 			},
 		},
 	}

@@ -16,6 +16,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/bubbles/viewport"
+	"bytes"
 )
 
 // StartInteractive runs the interactive bubbletea UI.
@@ -43,8 +44,9 @@ type Model struct {
 	commands  []utils.Command
 	err       error
 	message   string
-	fullScreenOutput string
 	viewport viewport.Model
+	filePath string
+	viewingViewport bool
 	scrollPos int
 }
 
@@ -84,7 +86,6 @@ func NewModel(taskStore *storage.FileTaskStorage) *Model {
 		textInput: ti,
 		message:   "",
 		err:       nil,
-		fullScreenOutput: "",
 		scrollPos: 0,
 	}
 	m.commands = PalleteCommands(taskStore)
@@ -148,9 +149,10 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch msg.Type {
 		case tea.KeyCtrlC, tea.KeyEsc:
-			if m.viewport.Height > 0 {
+			if m.viewingViewport {
 				// Exit full screen output view
 				m.viewport = viewport.Model{}
+				m.viewingViewport = false
 				return m, nil
 			}
 			return m, tea.Quit
@@ -176,9 +178,12 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					if cmd.Action != nil {
 						output := cmd.Action(strings.Join(parts, " "))
 						if parts[0] == "view" {
-							//m.fullScreenOutput = output
 							m.viewport = viewport.New(utils.TermWidth() - 4, utils.TermHeight() - 6)
 							m.viewport.SetContent(output)
+							m.filePath = strings.SplitN(output, "\n", 2)[0]
+							utils.DebugLog(m.filePath)
+							m.viewingViewport = true
+							m.ViewportUpdateLoop(utils.GetFileHash(m.filePath))
 						} else {
 							m.message = output
 						}
@@ -196,8 +201,6 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.err = fmt.Errorf("command not found: %q", commandText)
 			return m, nil
 		case tea.KeyCtrlS:
-			//m.scrollPos+=utils.TermHeight() - 6
-			//m.scrollPos = min(m.scrollPos, len(strings.Split(m.fullScreenOutput, "\n")) - utils.TermHeight() - 6)
 			m.viewport.ScrollDown((utils.TermHeight() - 6)/2)
 			return m, nil
 		case tea.KeyCtrlW:
@@ -231,7 +234,7 @@ const VIEWPORT_CONTROLS = "\n(Press Ctrl+S to scroll down, Ctrl+W to scroll up, 
 // View renders the UI.
 func (m *Model) View() string {
 	var s strings.Builder
-	if m.viewport.Height > 0 {
+	if m.viewingViewport {
 		// Render full screen output view
 		bubbleStyle := lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
@@ -269,7 +272,6 @@ func (m *Model) View() string {
 		// Add empty padding to separate Kanban from input
 		s.WriteString(padStyle.Render(""))
 	}
-
 	
 	// Render the text input for commands with bubble border.
 	termWidth := utils.TermWidth()
@@ -290,4 +292,21 @@ func (m *Model) View() string {
 	s.WriteString(borderStyle.Render(inputText))
 	
 	return s.String()
+}
+
+func (m *Model) ViewportUpdateLoop(lastHash []byte)  {
+	time.AfterFunc(2*time.Second, func() {
+		if !m.viewingViewport {
+			return
+		}
+		currentHash, fileContent := utils.GetFileContentHash(m.filePath)
+		if bytes.Equal(currentHash, lastHash) {
+			utils.DebugLog("Viewport content unchanged, skipping update.")
+			m.ViewportUpdateLoop(lastHash)
+			return
+		}
+		utils.DebugLog("Viewport content changed, updating view.")
+		m.viewport.SetContent(utils.OutputLines(strings.Split(fileContent, "\n")))
+		m.ViewportUpdateLoop(currentHash)
+	})
 }

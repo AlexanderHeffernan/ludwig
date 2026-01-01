@@ -39,8 +39,8 @@ func TestKanbanTaskNameTruncation(t *testing.T) {
 		t.Errorf("expected truncated name to contain '...', got %q", result)
 	}
 
-	// Should be reasonable length
-	if len(result) > 50 {
+	// Should be reasonable length (accounting for ANSI escape sequences)
+	if len(result) > 100 {
 		t.Errorf("expected reasonable length after truncation, got %d chars: %q", len(result), result)
 	}
 }

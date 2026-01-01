@@ -47,7 +47,6 @@ type Model struct {
 	viewport viewport.Model
 	filePath string
 	viewingViewport bool
-	scrollPos int
 }
 
 // tickMsg is a message sent on a timer to trigger a refresh.
@@ -86,7 +85,6 @@ func NewModel(taskStore *storage.FileTaskStorage) *Model {
 		textInput: ti,
 		message:   "",
 		err:       nil,
-		scrollPos: 0,
 	}
 	m.commands = PalleteCommands(taskStore)
 	return m

@@ -181,7 +181,6 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 							m.viewport = viewport.New(utils.TermWidth() - 4, utils.TermHeight() - 6)
 							m.viewport.SetContent(output)
 							m.filePath = strings.SplitN(output, "\n", 2)[0]
-							utils.DebugLog(m.filePath)
 							m.viewingViewport = true
 							m.ViewportUpdateLoop(utils.GetFileHash(m.filePath))
 						} else {
@@ -301,11 +300,9 @@ func (m *Model) ViewportUpdateLoop(lastHash []byte)  {
 		}
 		currentHash, fileContent := utils.GetFileContentHash(m.filePath)
 		if bytes.Equal(currentHash, lastHash) {
-			utils.DebugLog("Viewport content unchanged, skipping update.")
 			m.ViewportUpdateLoop(lastHash)
 			return
 		}
-		utils.DebugLog("Viewport content changed, updating view.")
 		m.viewport.SetContent(utils.OutputLines(strings.Split(fileContent, "\n")))
 		m.ViewportUpdateLoop(currentHash)
 	})

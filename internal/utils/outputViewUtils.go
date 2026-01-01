@@ -143,7 +143,6 @@ func colouredOrderedLists(output string) string {
 var UNORDERED_LIST_REGEX = regexp.MustCompile(`\n +(\+|\*|-) `)
 func colouredUnorderedLists(output string) string {
 	return UNORDERED_LIST_REGEX.ReplaceAllStringFunc(output, func(match string) string {
-		DebugLog("Matched unordered list item: " + match)
 		return LIST_STYLE.Render(match)
 	})
 }

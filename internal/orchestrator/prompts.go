@@ -36,7 +36,7 @@ Your task involves modifying code in this repository. Follow these steps:
    - All tests must pass before committing
 
 GIT WORKFLOW:
-You are working in a dedicated git branch for this task. Make commits regularly as you complete meaningful work:
+You are working in a dedicated git worktree for this task. Make commits regularly as you complete meaningful work:
 - Use: git add <files>
 - Then: git commit -m "Brief description of changes"
 - Commit after each logical chunk of work (e.g., after creating a file, writing a function, fixing a bug)

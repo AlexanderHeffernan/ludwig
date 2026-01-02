@@ -61,7 +61,7 @@ func orchestratorLoop() {
 		log.Printf("Failed to initialize task storage: %v", err)
 		return
 	}
-	
+
 	// Load configuration (optional)
 	cfg, err := config.LoadConfig()
 	if err != nil {
@@ -69,7 +69,7 @@ func orchestratorLoop() {
 	} else if cfg != nil {
 		log.Printf("Loaded config from ~/.ai-orchestrator/config.json")
 	}
-	
+
 	gemini := &clients.GeminiClient{}
 	var lastRequestTime time.Time
 
@@ -102,10 +102,10 @@ func orchestratorLoop() {
 						optionLabels[i] = opt.Label
 					}
 					prompt := BuildResumePrompt(t.Name, t.WorkInProgress, t.Review.Question, optionLabels, t.ReviewResponse.ChosenLabel, t.ReviewResponse.UserNotes)
-					
+
 					// Apply rate limiting before request
 					applyRateLimit(cfg, &lastRequestTime)
-					
+
 					// Create response writer for streaming
 					respWriter, respPath, err := storage.NewResponseWriter(t.ID)
 					if err != nil {
@@ -115,13 +115,13 @@ func orchestratorLoop() {
 						continue
 					}
 					defer respWriter.Close()
-					
+
 					// Store response file path immediately so it's available during streaming
 					t.ResponseFile = respPath
 					if err := taskStore.UpdateTask(t); err != nil {
 						log.Printf("Error saving task %s response file path: %v", t.ID, err)
 					}
-					
+
 					response, err := gemini.SendPrompt(prompt, respWriter)
 					if err != nil {
 						log.Printf("Error resuming task %s: %v", t.ID, err)
@@ -133,14 +133,7 @@ func orchestratorLoop() {
 					t.Status = types.Completed
 					// ResponseFile already set above when streaming started
 					_ = taskStore.UpdateTask(t)
-					
-					// Checkout back to main after task completion
-					if err := CheckoutBranch("main"); err != nil {
-						log.Printf("Warning: Failed to checkout main after task %s completion: %v", t.ID, err)
-					} else {
-						log.Printf("Checked out to main after completing task %s", t.ID)
-					}
-					
+
 					processed = true
 					break
 				}
@@ -154,29 +147,29 @@ func orchestratorLoop() {
 			for _, t := range tasks {
 				if t.Status == types.Pending {
 					log.Printf("Starting task %s: %s", t.ID, t.Name)
-					
-					// Generate and create branch for this task
+
+					// Generate and create worktree for this task
 					branchName, err := GenerateBranchName(t.Name)
 					if err != nil {
 						log.Printf("Failed to generate branch name for task %s: %v", t.ID, err)
 						continue
 					}
-					if err := CreateBranch(branchName); err != nil {
-						log.Printf("Failed to create branch %s for task %s: %v", branchName, t.ID, err)
+					if err := CreateWorktree(branchName); err != nil {
+						log.Printf("Failed to create worktree %s for task %s: %v", branchName, t.ID, err)
 						continue
 					}
-					log.Printf("Created branch %s for task %s", branchName, t.ID)
+					log.Printf("Created worktree %s for task %s", branchName, t.ID)
 					t.BranchName = branchName
-					
+
 					t.Status = types.InProgress
 					if err := taskStore.UpdateTask(t); err != nil {
 						log.Printf("Failed to set task %s to In Progress: %v", t.ID, err)
 						continue
 					}
-					
+
 					// Apply rate limiting before request
 					applyRateLimit(cfg, &lastRequestTime)
-					
+
 					// Create response writer for streaming
 					respWriter, respPath, err := storage.NewResponseWriter(t.ID)
 					if err != nil {
@@ -186,13 +179,13 @@ func orchestratorLoop() {
 						continue
 					}
 					defer respWriter.Close()
-					
+
 					// Store response file path immediately so it's available during streaming
 					t.ResponseFile = respPath
 					if err := taskStore.UpdateTask(t); err != nil {
 						log.Printf("Error saving task %s response file path: %v", t.ID, err)
 					}
-					
+
 					response, err := gemini.SendPrompt(BuildTaskPrompt(t.Name), respWriter)
 					if err != nil {
 						log.Printf("Error sending task %s to Gemini: %v", t.ID, err)
@@ -218,14 +211,7 @@ func orchestratorLoop() {
 					t.Status = types.Completed
 					// ResponseFile already set above when streaming started
 					_ = taskStore.UpdateTask(t)
-					
-					// Checkout back to main after task completion
-					if err := CheckoutBranch("main"); err != nil {
-						log.Printf("Warning: Failed to checkout main after task %s completion: %v", t.ID, err)
-					} else {
-						log.Printf("Checked out to main after completing task %s", t.ID)
-					}
-					
+
 					processed = true
 					break // Only process one task per loop
 				}
@@ -237,8 +223,6 @@ func orchestratorLoop() {
 		}
 	}
 }
-
-
 
 // parseReviewRequest extracts a review request and work-in-progress from the AI response
 // Returns (WorkInProgress, ReviewRequest, hasReview)

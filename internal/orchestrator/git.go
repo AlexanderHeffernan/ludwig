@@ -8,31 +8,24 @@ import (
 	"strings"
 )
 
-// CreateBranch creates a new branch and checks it out
-func CreateBranch(branchName string) error {
-	cmd := exec.Command("git", "checkout", "-b", branchName)
+// CreateWorktree creates a new worktree for the branch
+func CreateWorktree(branchName string) error {
+	worktreePath := "../worktrees/" + branchName
+	cmd := exec.Command("git", "worktree", "add", worktreePath, branchName)
 	cmd.Dir = getRepoRoot()
 	return cmd.Run()
 }
 
-// CheckoutBranch switches to an existing branch
-func CheckoutBranch(branchName string) error {
-	cmd := exec.Command("git", "checkout", branchName)
+// WorktreeExists checks if a worktree already exists for the branch
+func WorktreeExists(branchName string) (bool, error) {
+	cmd := exec.Command("git", "worktree", "list")
 	cmd.Dir = getRepoRoot()
-	return cmd.Run()
-}
-
-// BranchExists checks if a branch already exists
-func BranchExists(branchName string) (bool, error) {
-	cmd := exec.Command("git", "rev-parse", "--verify", branchName)
-	cmd.Dir = getRepoRoot()
-	cmd.Stderr = nil
-	err := cmd.Run()
-	if err == nil {
-		return true, nil
+	output, err := cmd.Output()
+	if err != nil {
+		return false, err
 	}
-	// exit code 1 means branch doesn't exist, which is expected
-	return false, nil
+	// Check if branchName appears in the output
+	return strings.Contains(string(output), branchName), nil
 }
 
 // GenerateBranchName creates a unique branch name from a task name
@@ -64,7 +57,7 @@ func GenerateBranchName(taskName string) (string, error) {
 	branchName := baseName
 	counter := 1
 	for {
-		exists, err := BranchExists(branchName)
+		exists, err := WorktreeExists(branchName)
 		if err != nil {
 			return "", err
 		}

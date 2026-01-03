@@ -7,6 +7,7 @@ import (
 	"ludwig/internal/updater"
 )
 
+// Auto-updater test
 var version = "dev"
 
 func main() {

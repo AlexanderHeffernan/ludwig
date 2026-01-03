@@ -14,7 +14,7 @@ ludwig/
 │   │   ├── commandPallete.go         # Command definitions
 │   │   └── kanban.go                 # Kanban board display
 │   ├── config/                       # Configuration management
-│   │   └── config.json               # User config location: ~/.ai-orchestrator/config.json
+│   │   └── config.json               # Config location: .ludwig/config.json
 │   ├── mcp/                          # Model context protocol (future enhancement)
 │   ├── orchestrator/                 # Core orchestration logic
 │   │   ├── orchestrator.go           # Main orchestrator loop
@@ -342,7 +342,7 @@ Run completely offline using open-source models via Ollama.
 
 4. **Configure Ludwig** to use Ollama:
    ```bash
-   # Create/edit ~/.ai-orchestrator/config.json
+   # Create/edit .ludwig/config.json (in your project root)
    {
        "aiProvider": "ollama",
        "ollamaBaseURL": "http://localhost:11434",
@@ -360,6 +360,8 @@ Run completely offline using open-source models via Ollama.
 | `delayMs` | Minimum delay between requests (optional) | - |
 
 #### Example Full Config
+
+Create `.ludwig/config.json` in your project root:
 
 ```json
 {
@@ -396,9 +398,10 @@ Run completely offline using open-source models via Ollama.
 #### With Ollama
 1. Verify Ollama is running: `curl http://localhost:11434/api/tags`
 2. Check that a model is installed: `ollama list`
-3. Verify config has `"aiProvider": "ollama"`
-4. Check config points to correct Ollama URL: `ollamaBaseURL`
-5. Verify git repository is initialized: `git status`
+3. Verify config file exists: `.ludwig/config.json`
+4. Verify config has `"aiProvider": "ollama"`
+5. Check config points to correct Ollama URL: `ollamaBaseURL`
+6. Verify git repository is initialized: `git status`
 
 ## Dependencies
 

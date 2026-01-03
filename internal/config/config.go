@@ -3,6 +3,7 @@ package config
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 )
@@ -16,15 +17,16 @@ type Config struct {
 	OllamaModel   string `json:"ollamaModel"`   // Model name for Ollama (default: mistral)
 }
 
-// LoadConfig loads configuration from ~/.ai-orchestrator/config.json
+// LoadConfig loads configuration from .ludwig/config.json in the current project
 // Returns nil if file doesn't exist (which is fine - optional config)
 func LoadConfig() (*Config, error) {
-	home, err := os.UserHomeDir()
+	cwd, err := os.Getwd()
 	if err != nil {
 		return nil, err
 	}
 
-	configPath := filepath.Join(home, ".ai-orchestrator", "config.json")
+	ludwigDir := filepath.Join(cwd, ".ludwig")
+	configPath := filepath.Join(ludwigDir, "config.json")
 
 	// File doesn't exist - that's okay
 	file, err := os.Open(configPath)
@@ -42,4 +44,30 @@ func LoadConfig() (*Config, error) {
 	}
 
 	return &cfg, nil
+}
+
+// SaveConfig saves configuration to .ludwig/config.json in the current project
+func SaveConfig(cfg *Config) error {
+	cwd, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+
+	ludwigDir := filepath.Join(cwd, ".ludwig")
+	if err := os.MkdirAll(ludwigDir, 0755); err != nil {
+		return fmt.Errorf("failed to create .ludwig directory: %w", err)
+	}
+
+	configPath := filepath.Join(ludwigDir, "config.json")
+	file, err := os.Create(configPath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	if err := json.NewEncoder(file).Encode(cfg); err != nil {
+		return err
+	}
+
+	return nil
 }

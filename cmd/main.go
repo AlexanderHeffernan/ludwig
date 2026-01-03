@@ -14,6 +14,11 @@ func main() {
 	updateFlag := flag.Bool("update", false, "Check for and install updates")
 	flag.Parse()
 
+	// Apply any pending updates from previous run
+	if err := updater.ApplyPendingUpdate(); err != nil {
+		fmt.Println("Warning: " + err.Error())
+	}
+
 	if *versionFlag {
 		fmt.Println("ludwig version " + version)
 		return

@@ -6,8 +6,6 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"os/exec"
-	"path/filepath"
 	"runtime"
 	"strings"
 	"archive/tar"
@@ -152,28 +150,13 @@ func DownloadAndInstall(currentVersion string) error {
 		return fmt.Errorf("failed to make binary executable: %w", err)
 	}
 
-	// Create a script to replace the binary after we exit
-	scriptPath := filepath.Join(os.TempDir(), "ludwig-update.sh")
-	scriptContent := fmt.Sprintf(`#!/bin/bash
-sleep 1
-mv "%s" "%s"
-`, extractedBinary, exePath)
-
-	if err := os.WriteFile(scriptPath, []byte(scriptContent), 0755); err != nil {
-		return fmt.Errorf("failed to create update script: %w", err)
-	}
-	defer os.Remove(scriptPath)
-
-	// Spawn the update script in the background
-	cmd := exec.Command("bash", scriptPath)
-	if err := cmd.Start(); err != nil {
-		// On failure, try direct replacement (works on most Unix systems)
-		if err := os.Rename(extractedBinary, exePath); err != nil {
-			return fmt.Errorf("failed to install update: %w", err)
-		}
+	// Move to .new location (will be applied on next startup)
+	newPath := exePath + ".new"
+	if err := os.Rename(extractedBinary, newPath); err != nil {
+		return fmt.Errorf("failed to prepare update: %w", err)
 	}
 
-	fmt.Println("Update installed! Please restart Ludwig.")
+	fmt.Println("Update ready! Please restart Ludwig to apply.")
 	return nil
 }
 
@@ -304,6 +287,28 @@ func matchesAsset(assetName, os, arch string) bool {
 	return strings.Contains(assetName, "_"+os+"_") &&
 		strings.Contains(assetName, "_"+arch) &&
 		(strings.HasSuffix(assetName, ".tar.gz") || strings.HasSuffix(assetName, ".zip"))
+}
+
+// ApplyPendingUpdate checks if there's a pending .new binary and applies it
+func ApplyPendingUpdate() error {
+	exePath, err := os.Executable()
+	if err != nil {
+		return nil // Can't apply update if we can't determine executable path
+	}
+
+	newPath := exePath + ".new"
+
+	// Check if pending update exists
+	if _, err := os.Stat(newPath); os.IsNotExist(err) {
+		return nil // No pending update
+	}
+
+	// Replace the old binary with the new one
+	if err := os.Rename(newPath, exePath); err != nil {
+		return fmt.Errorf("failed to apply pending update: %w", err)
+	}
+
+	return nil
 }
 
 // compareVersions returns -1 if v1 < v2, 0 if equal, 1 if v1 > v2

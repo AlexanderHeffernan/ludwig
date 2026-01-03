@@ -37,5 +37,5 @@ func main() {
 		return
 	}
 
-	cli.StartInteractive()
+	cli.StartInteractive(version)
 }

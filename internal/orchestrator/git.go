@@ -20,14 +20,37 @@ func CreateWorktree(branchName, taskID string) (string, error) {
 		return "", fmt.Errorf("failed to create .worktrees directory: %w", err)
 	}
 	
-	// Create worktree with the branch
+	// Try to create worktree based on "main" branch first
 	cmd := exec.Command("git", "worktree", "add", "-b", branchName, worktreeDir, "main")
+	cmd.Dir = repoRoot
+	if err := cmd.Run(); err == nil {
+		return worktreeDir, nil
+	}
+	
+	// If "main" doesn't exist, try the current branch as fallback
+	currentBranch, err := getCurrentBranch(repoRoot)
+	if err != nil {
+		return "", fmt.Errorf("failed to create worktree: main branch not found and unable to determine current branch")
+	}
+	
+	cmd = exec.Command("git", "worktree", "add", "-b", branchName, worktreeDir, currentBranch)
 	cmd.Dir = repoRoot
 	if err := cmd.Run(); err != nil {
 		return "", fmt.Errorf("failed to create worktree: %w", err)
 	}
 	
 	return worktreeDir, nil
+}
+
+// getCurrentBranch returns the current branch name or HEAD ref
+func getCurrentBranch(repoRoot string) (string, error) {
+	cmd := exec.Command("git", "rev-parse", "--abbrev-ref", "HEAD")
+	cmd.Dir = repoRoot
+	output, err := cmd.Output()
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(string(output)), nil
 }
 
 // RemoveWorktree removes a git worktree and cleans up the directory

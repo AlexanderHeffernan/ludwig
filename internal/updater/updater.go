@@ -96,12 +96,13 @@ func DownloadAndInstall() error {
 	}
 
 	// Find the right asset for current OS/arch
-	assetName := getExpectedAssetName()
-	var downloadURL string
+	osName, archName := getOSAndArch()
+	var downloadURL, assetName string
 
 	for _, asset := range release.Assets {
-		if asset.Name == assetName {
+		if matchesAsset(asset.Name, osName, archName) {
 			downloadURL = asset.DownloadURL
+			assetName = asset.Name
 			break
 		}
 	}
@@ -264,7 +265,7 @@ func extractZip(zipPath string) (string, error) {
 	return "", fmt.Errorf("ludwig binary not found in archive")
 }
 
-func getExpectedAssetName() string {
+func getOSAndArch() (string, string) {
 	var os, arch string
 
 	switch runtime.GOOS {
@@ -285,12 +286,14 @@ func getExpectedAssetName() string {
 		arch = runtime.GOARCH
 	}
 
-	ext := ".tar.gz"
-	if runtime.GOOS == "windows" {
-		ext = ".zip"
-	}
+	return os, arch
+}
 
-	return fmt.Sprintf("ludwig_v*_%s_%s%s", os, arch, ext)
+func matchesAsset(assetName, os, arch string) bool {
+	// Asset names are like: ludwig_v0.0.5_Darwin_arm64.tar.gz
+	return strings.Contains(assetName, "_"+os+"_") &&
+		strings.Contains(assetName, "_"+arch) &&
+		(strings.HasSuffix(assetName, ".tar.gz") || strings.HasSuffix(assetName, ".zip"))
 }
 
 // compareVersions returns -1 if v1 < v2, 0 if equal, 1 if v1 > v2

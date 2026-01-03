@@ -6,13 +6,23 @@ Ludwig is an AI-powered task orchestrator that automates project work through in
 
 ### Quick Install (Recommended)
 
+#### macOS & Linux
+
 Copy and paste this command into your terminal:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/AlexanderHeffernan/Ludwig-AI/main/install.sh | bash
 ```
 
-That's it! Ludwig will be installed to `/usr/local/bin/` and ready to use globally.
+#### Windows
+
+Run this command in PowerShell (as Administrator for system-wide install):
+
+```powershell
+powershell -Command "& {[ScriptBlock]::Create((New-Object Net.WebClient).DownloadString('https://raw.githubusercontent.com/AlexanderHeffernan/Ludwig-AI/main/install.ps1')).Invoke()}"
+```
+
+That's it! Ludwig will be installed to `/usr/local/bin/` (macOS/Linux) or `C:\Program Files\Ludwig` (Windows) and ready to use globally.
 
 ### Build from Source
 

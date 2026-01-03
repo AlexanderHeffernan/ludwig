@@ -1,5 +1,6 @@
 /ludwig
 /main
-.ludwig
+/.ludwig
+/.worktrees
 .DS_Store
 debug.log

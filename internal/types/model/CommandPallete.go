@@ -5,7 +5,6 @@ import (
 	"ludwig/internal/storage"
 	"ludwig/internal/types/task"
 	"ludwig/internal/orchestrator"
-	"ludwig/internal/components/outputViewport"
 
 	"strings"
 	"time"
@@ -149,24 +148,9 @@ func PalleteCommands(taskStore *storage.FileTaskStorage) []Command {
 				}
 				taskToView := tasks[taskIndex]
 				filePath := "./.ludwig/" + taskToView.ResponseFile
-				//fileContent := utils.ReadFileAsString(filePath)
-				//output := utils.OutputLines(strings.Split(fileContent, "\n"))
 
-				/*
-				m.viewport = viewport.New(utils.TermWidth() - 6, utils.TermHeight() - 6)
-				m.viewport.MouseWheelEnabled = true
-				m.viewport.MouseWheelDelta = 3
-				m.viewport.Style.Padding(0, 0)
-				m.viewport.Style.Margin(0, 0)
-				m.viewport.SetContent(output)
-				m.viewport.GotoBottom()
-				m.progressBar = progressBar.NewModel(&m.viewport)
 				m.viewingViewport = true
-				m.viewingTask = &taskToView
-				m.filePath = filePath
-				*/
-				m.viewingViewport = true
-				m.taskViewport = outputViewport.NewModel(&taskToView, filePath)
+				m.taskViewport = *m.taskViewport.SetViewingTask(&taskToView, filePath)
 				m.taskViewport.ViewportUpdateLoop()
 
 				return ""

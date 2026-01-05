@@ -13,13 +13,12 @@ import (
 type Model struct {
 	Progress float64
 	Width int
-	Viewport *viewport.Model
 }
 
 func NewModel(v *viewport.Model) Model {
 	return Model{
 		Progress: v.ScrollPercent(),
-		Viewport: v,
+		Width: 0,
 	}
 }
 
@@ -27,8 +26,12 @@ var barStyle = lipgloss.NewStyle().Bold(true)
 var style = lipgloss.NewStyle().Faint(true)
 
 func (m *Model) View() string {
+	if m.Width == 0 {
+		m.Width = utils.TermWidth()
+	}
 	utils.DebugLog("ProgressBar")
 	floatWidth := float64(m.Width)
+	//m.Progress = m.Viewport.ScrollPercent()
 	barWidth := floatWidth * m.Progress
 
 	intWidth := int(math.Round(barWidth))
@@ -39,14 +42,9 @@ func (m *Model) View() string {
 }
 
 func (m *Model) Update(msg tea.Msg) (*Model, tea.Cmd) {
-	if m.Viewport == nil {
-		return m, nil
-	}
-	m.Progress = m.Viewport.ScrollPercent()
-
-	if m.Width == 0 {
-		m.Width = utils.TermWidth()
-	}
+	utils.DebugLog("ProgressBar Update")
+	//m.Progress = m.Viewport.ScrollPercent()
+	utils.DebugLog("ProgressBar ScrollPercent: " + strconv.FormatFloat(m.Progress, 'f', 2, 64))
 
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:

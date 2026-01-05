@@ -13,7 +13,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbles/textarea"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -69,14 +68,11 @@ func NewModel(taskStore *storage.FileTaskStorage, version string) *Model {
 		return &Model{err: fmt.Errorf("could not load tasks: %w", err)}
 	}
 
-	s := spinner.New()
-	s.Spinner = spinner.Dot
-	s.Style = loadingStyle
-
 	m := &Model{
 		taskStore:    taskStore,
 		tasks:        utils.PointerSliceToValueSlice(tasks),
 		commandInput: commandInput.NewModel(),
+		taskViewport: outputViewport.NewModel(),
 	}
 	m.commands = PalleteCommands(taskStore)
 
@@ -109,8 +105,10 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 
 	//m.textInput, cmd = m.textInput.Update(msg)
-	m.commandInput.Update(msg)
-	_, cmd = m.taskViewport.Update(msg)
+	if !m.viewingViewport {
+		m.commandInput.Update(msg)
+	}
+	_, viewportCmd := m.taskViewport.Update(msg)
 	// Dynamically adjust height based on content wrapping
 
 	switch msg := msg.(type) {
@@ -156,7 +154,8 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					return m, nil
 				}
 			}
-			m.err = fmt.Errorf("command not found: %q", commandText)
+			//m.err = fmt.Errorf("command not found: %q", commandText)
+			m.message = "Command not found: " + parts[0]
 			return m, nil
 		}
 
@@ -172,6 +171,14 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 
+	// Handle commands from viewport (like spinner ticks)
+	if viewportCmd != nil {
+		if cmd != nil {
+			return m, tea.Batch(cmd, viewportCmd)
+		}
+		return m, viewportCmd
+	}
+
 	return m, cmd
 }
 
@@ -183,34 +190,9 @@ func (m *Model) View() string {
 	var s strings.Builder
 	if m.viewingViewport {
 		return m.taskViewport.View()
-		/*
-			s.WriteString(m.progressBar.View())
-			// Render full screen output view
-			bubbleStyle := lipgloss.NewStyle().
-				Border(lipgloss.RoundedBorder()).
-				Width(utils.TermWidth() - 5).
-				Height(utils.TermHeight() - 8).
-				BorderForeground(lipgloss.Color("62")).
-				Padding(0, 1).
-				Margin(1, 1)
-
-			spinnerOn := m.viewingTask.Status == task.InProgress && orchestrator.IsRunning()
-
-			insideBubble := strings.Builder{}
-			insideBubble.WriteString(m.viewport.View())
-			if spinnerOn {
-				utils.DebugLog("Rendering spinner in viewport view")
-				insideBubble.WriteString("\n" + m.spinner.View() + loadingStyle.Render(" Working on it"))
-			}
-
-			s.WriteString(bubbleStyle.Render(insideBubble.String()))
-			s.WriteString(VIEWPORT_CONTROLS)
-			return s.String()
-		*/
 	}
 	// Render the Kanban board.
 	s.WriteString(kanban.RenderKanban(m.tasks))
-	//s.WriteString("\n")
 
 	linesCount := strings.Count(s.String(), "\n")
 

@@ -6,11 +6,8 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-
-/**
- * DebugLog writes a debug message to debug.log if the DEBUG environment variable is set.
- * Use `DEBUG=1 go run cmd/main.go` when debugging.
- */
+// DebugLog writes a debug message to debug.log if the DEBUG environment variable is set.
+// Use `DEBUG=1 go run cmd/main.go` when debugging.
 func DebugLog(msg string) {
 	if os.Getenv("DEBUG") == "" {
 		return
